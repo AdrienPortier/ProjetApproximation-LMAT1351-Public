@@ -1,5 +1,5 @@
 import numpy as np
-import mpmath as mpmath
+import mpmath
 import matplotlib.pyplot as plt
 
 def getNewtonBasis(nodes):
