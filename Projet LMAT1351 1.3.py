@@ -118,7 +118,8 @@ for n in range(1, 5):
         plt.plot(x, lagrange_bound, label=f"Reste de Lagrange, t={tcas}", linestyle="dashed", color=color)
         
         plt.xlabel("x")
-        plt.ylabel("|f(x) - p(x)|")
+        plt.ylabel("|f(x) - p(x)| (échelle logarithmique)")
+        plt.yscale("log")
         plt.legend()
         plt.grid(True)
 
