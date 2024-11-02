@@ -1,4 +1,5 @@
 import numpy as np
+import numdifftools as nd
 from matplotlib import pyplot as plt
 from math import factorial
 
@@ -19,7 +20,6 @@ def fillC(f,N,C):
 def approximation(f,N,L):
     C = fillC(f,N,[])
     x = np.linspace(-L,L,1000)
-    y = f(x)
     p = 0
     for i in range(0,len(C)):
         z = 1
@@ -27,11 +27,7 @@ def approximation(f,N,L):
             z *= x-float(N[j])
         z *= float(C[i])
         p += z
-    plt.plot(x,y,"blue")
-    plt.plot(x,p,"red")
-    plt.legend(["1/(1+25x²)","p(x)"])
-    #plt.ylim(min(y)-1,max(y)+1)
-    plt.show()
+    return p
 
 def pol(f,N):
     C = fillC(f,N,[])
@@ -48,11 +44,33 @@ def Chebyshev(n,s):
     return N
 
 N = [[-1,1],[-1,0,1],[-1,-0.5,0,0.5,1],[-1,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1]]
-for n in N:
-    print(f"polynome interpolateur de f(x) pour N = {n} : {pol(f,n)}")
-    approximation(f,n,1)
+x=np.linspace(-1,1,1000)
+WW = []
+for nodes in N:
+    W = 1
+    for e in nodes:
+        W *= (x-e)
+    WW.append(W)
+plt.plot(x,f(x),"black",label="1/1+25x²")
+for i in range(len(N)):
+    df = nd.Derivative(f,n=len(N))
+    dy = abs(df(x))
+    print(f"polynome interpolateur de 1/1+25x² pour N = {N[i]} : {pol(f,N[i])}")
+    p = approximation(f,N[i],1)
+    print(all((abs(f(x)-p)<=max(dy)*abs(WW[i])/factorial(len(N)))[:-1])*np.isclose(abs(f(x)-p)[-1],max(dy)*abs(WW[i][-1])/factorial(len(N))))
+    plt.plot(x,p,["red","orange","green","blue"][i],linewidth=0.5,label=f"p(x), N={N[i]}")
+plt.title("Approximation de 1/1+25x²")
+plt.legend()
+plt.show()
 
-for n in [2,3,5,7,9]:
-    C = Chebyshev(n,1)
+x=np.linspace(-1,1,1000)
+plt.plot(x,f(x),"black",label="1/1+25x²")
+N = [2,3,5,7,9]
+for i in range(len(N)):
+    C = Chebyshev(N[i],1)
     print(f"polynome interpolateur de f(x) pour N = {C} : {pol(f,C)}")
-    approximation(f,C,1)
+    p = approximation(f,C,1)
+    plt.plot(x,p,["red","orange","green","blue","purple"][i],linewidth=0.5,label=f"p(x), N={N[i]}")
+plt.title("Approximation de 1/1+25x² via Chebyshev")
+plt.legend()
+plt.show()
