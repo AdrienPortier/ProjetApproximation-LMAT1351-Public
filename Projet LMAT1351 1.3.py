@@ -74,7 +74,7 @@ for tcas in t:
         plt.grid(True)
     
     plt.suptitle("Approximations de Taylor (en 0) et de Newton (sur [-t, t] avec t = " + str(tcas) + " ) de la fonction sin")
-    plt.savefig(f"approx_t_{tcas}.jpg", format='jpg', dpi=300)  # dpi pour la qualité
+    plt.savefig(f"approx_t_{tcas}.svg") # dpi pour la qualité
     plt.close()
 
 
@@ -124,6 +124,6 @@ for n in range(1, 5):
         plt.grid(True)
 
     plt.title(f"Comparaison des erreurs d'approximation et des bornes théoriques de Lagrange pour n={n}")
-    plt.savefig(f"erreur_n_{n}.jpg", format='jpg', dpi=300)
+    plt.savefig(f"erreur_n_{n}.svg")
     plt.close()
 
