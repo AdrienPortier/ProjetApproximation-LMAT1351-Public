@@ -54,7 +54,6 @@ plt.close()  # Fermer la figure
 # Graphique pour les nœuds de Chebyshev
 plt.figure(figsize=(12, 6))
 plt.plot(x, f(x), "black", label="f(x) = 1 / (1 + 25x²)")
-plt.yscale("log")
 
 for i, ncas in enumerate(n_values):
     nodes = chebyshev_nodes(ncas)
@@ -85,6 +84,7 @@ for i, ncas in enumerate(n_values):
     plt.plot(x, error_vals, label=f"Erreur d'approximation, n={ncas}", linestyle="solid", color=colors[i])  # Utilisation des couleurs définies
     plt.plot(x, lagrange_bound, label=f"Reste de Lagrange, n={ncas}", linestyle="dashed", color=colors[i])  # Utilisation des couleurs définies
 
+plt.yscale("log")
 plt.xlabel("x")
 plt.ylabel("|f(x) - p(x)| (échelle logarithmique)")
 plt.ylim(10**-5, 10**5)
