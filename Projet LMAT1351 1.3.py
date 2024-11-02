@@ -84,32 +84,45 @@ def Wnplusone(nodes):
     return lambda x: mpmath.fprod([(x - nodes[j]) for j in range(len(nodes))])
 
 # Tracés des erreurs d'approximation
+colors = ['blue', 'green', 'orange', 'purple']
+
 for n in range(1, 5):
     plt.figure(figsize=(10, 6))
-    for tcas in t:
+    
+    for idx, tcas in enumerate(t):
         x = np.linspace(-1, 1, 1000)
+        
+        # Création des noeuds pour l'interpolation de Newton
         nodes = [mpmath.mpf(val) for val in np.linspace(-tcas, tcas, n + 1)]
+        
+        # Calcul des bases et des coefficients de Newton pour l'interpolation
         basis = getNewtonBasis(nodes)
         coef = getNewtonCoefficients(nodes, mpmath.sin)
         
+        # Fonction d'interpolation de Newton construite à partir des bases et coefficients
         NewtonInter = lambda x: sum(c * b(x) for c, b in zip(coef, basis))
         NewtonVals = [NewtonInter(mpmath.mpf(val)) for val in x]
 
+        # Calcul de l'erreur d'approximation pour chaque point x
         error_vals = [abs(mpmath.sin(mpmath.mpf(val)) - NewtonInter(mpmath.mpf(val))) for val in x]
         
-        Sine_n_derivative = lambda x: mpmath.diff(mpmath.sin, x, n+1)
-        max_derivative = max([abs(Sine_n_derivative(val)) for val in x])
-        factorial = mpmath.factorial(n + 1)
-        lagrange_bound = [(max_derivative / factorial) * abs(Wnplusone(nodes)(val)) for val in x]
+        # Calcul de la borne de Lagrange pour l'erreur théorique
+        Sine_n_derivative = lambda x: mpmath.diff(mpmath.sin, x, n + 1)  # Dérivée n+1-ème de sin(x)
+        max_derivative = max([abs(Sine_n_derivative(val)) for val in x])  # Borne sup de la dérivée
+        factorial = mpmath.factorial(n + 1)  # Facteur (n+1)!
+        lagrange_bound = [(max_derivative / factorial) * abs(Wnplusone(nodes)(val)) for val in x]  # Formule de la borne
         
-        plt.plot(x, error_vals, label=f"erreur d'approximation, t={tcas}", linestyle="solid")
-        plt.plot(x, lagrange_bound, label=f"reste de Lagrange, t={tcas}", linestyle="dashed")
+        # Tracés de l'erreur d'approximation et de la borne de Lagrange pour chaque valeur de t
+        color = colors[idx]
+        plt.plot(x, error_vals, label=f"Erreur d'approximation, t={tcas}", linestyle="solid", color=color)
+        plt.plot(x, lagrange_bound, label=f"Reste de Lagrange, t={tcas}", linestyle="dashed", color=color)
+        
         plt.xlabel("x")
         plt.ylabel("|f(x) - p(x)|")
         plt.legend()
         plt.grid(True)
 
-
     plt.title(f"Comparaison des erreurs d'approximation et des bornes théoriques de Lagrange pour n={n}")
-    plt.savefig(f"erreur_n_{n}.jpg", format='jpg', dpi=300)  # dpi pour la qualité
+    plt.savefig(f"erreur_n_{n}.jpg", format='jpg', dpi=300)
     plt.close()
+
