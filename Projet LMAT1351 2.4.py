@@ -19,4 +19,4 @@ plt.plot(x,y,"red")
 
 plt.xlim(-5,5)
 plt.ylim(-5,5)
-plt.show()
+plt.savefig("heart.svg")
