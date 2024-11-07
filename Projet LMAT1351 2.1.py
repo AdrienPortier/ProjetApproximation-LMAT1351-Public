@@ -25,5 +25,7 @@ for i in range(0,len(P)-1):
     x,y = B(t,[P[i],P[i+1]])
     plt.plot(x,y,"--",color="black")
 plt.legend()
-plt.show()
+plt.xlabel("x")
+plt.ylabel("y")
 plt.savefig("BezierExemple.svg")
+plt.show()
