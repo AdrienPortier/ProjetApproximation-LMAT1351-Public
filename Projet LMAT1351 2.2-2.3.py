@@ -13,6 +13,8 @@ def quad_spline(P, control_point):
     Retourne une fonction spline S(t) définie sur [0, 1].
     """
     n = len(P) - 1  # Nombre de segments
+    if(n == 0):
+        return
     Px0, Py0 = P[0]
     ContX, ContY = control_point
     
@@ -45,23 +47,29 @@ def quad_spline(P, control_point):
         
         # Relier Cont à Px+1 avec une ligne noire et pointillée
         plt.plot([ContX, Pxk1], [ContY, Pyk1], color="black", linestyle="--", linewidth=1)
-        plt.scatter(ContX, ContY, color="black")
+        if k == n-1:
+            if n == 2:
+                plt.scatter(ContX, ContY, color="black", label="Point de contrôle déduit")
+            else:
+                plt.scatter(ContX, ContY, color="black", label="Points de contrôle déduits")
+        else:
+            plt.scatter(ContX, ContY, color="black")
         
         list_Bézier.append(lambda t, Pxk=Pxk, Pyk=Pyk, ContX=ContX, ContY=ContY, Pxk1=Pxk1, Pyk1=Pyk1: [
             (1 - t)**2 * Pxk + 2 * t * (1 - t) * ContX + t**2 * Pxk1,
             (1 - t)**2 * Pyk + 2 * t * (1 - t) * ContY + t**2 * Pyk1
         ])
-    plt.scatter(ContX, ContY, color="black", label="Points de contrôles déduits")
     
-    # Relier le dernier Cont à Px+1 avec une ligne noire et pointillée
-    plt.plot([ContX, Pxk1], [ContY, Pyk1], color="black", linestyle="--", linewidth=1)
     
     # Fonction pour appliquer l'indicatrice et combiner les segments
     def res(t):
         resX, resY = np.zeros_like(t), np.zeros_like(t)
         
         for k, Bézier in enumerate(list_Bézier):
-            indic = (t > k / n) & (t <= (k + 1) / n)
+            if(k == 0):
+                indic = (t >= 0) & (t <= (k + 1) / n)
+            else:
+                indic = (t > k / n) & (t <= (k + 1) / n)
             
             segment_t = n * t - k
             tempX, tempY = Bézier(segment_t)
@@ -73,24 +81,33 @@ def quad_spline(P, control_point):
     
     return res
 
-# Exemple 
-P = [[0,0],[1,1],[2,0],[3,1],[4,0],[6,-4],[7,8],[8,10],[9,15]]
-control_point = [0.5, -2]
+# Exemple fonctionnant pour le cas n = 3
+P = [[-1,0],[1,1],[-1,7]]
+control_point = [2,0]
 t = np.linspace(0, 1, 10**6)
-
+plt.figure(figsize = (10,6))
 spline = quad_spline(P, control_point)
-
 curveX, curveY = spline(t)
-
-# Affichage de la spline en bleu
 plt.plot(curveX, curveY, label='Spline quadratique', color="blue")
-
-# Affichage des points de contrôle en rouge
 plt.scatter(*zip(*P), color='red', label='Nœuds')
-
 # Affichage des points de contrôle déduits en noir
-plt.scatter(control_point[0], control_point[1], color="black", label="Point de contrôle initial choisi", marker="*")
-
+plt.scatter(control_point[0], control_point[1], color="black", label="Point de contrôle initial choisi ($Q_{0}$)", marker="*")
 plt.legend()
-plt.title("Spline quadratique (courbes de Béziers quadratiques par morceaux)")
+plt.savefig("2.2_example.svg")
 plt.show()
+
+
+# Exemple pour n général
+P = [[0,0],[1,1],[2,0],[3,1],[4,0],[6,-4],[7,8],[6,10],[8,-2],[9,15],[4,20],[-1,3],[0,0]]
+control_point = [0.3,-0.2]
+t = np.linspace(0, 1, 10**6)
+plt.figure(figsize = (10,6))
+spline = quad_spline(P, control_point)
+curveX, curveY = spline(t)
+plt.plot(curveX, curveY, label='Spline quadratique', color="blue")
+plt.scatter(*zip(*P), color='red', label='Nœuds')
+plt.scatter(control_point[0], control_point[1], color="black", label="Point de contrôle initial choisi ($Q_{0}$)", marker="*")
+plt.legend()
+plt.savefig("2.3_example.svg")
+plt.show()
+
