@@ -2,106 +2,100 @@ import numpy as np
 import sympy as sp
 from mpmath import polyroots
 x = sp.Symbol('x')
+
 # Paramètres
-n = 15-1  # x0, ... , xn noeuds, si n = 9, 10 termes.
+n = 11  # noeuds x0, ... , xn => n+1 noeuds
 
 # Fonctions à intégrer
-
-f1 = sp.sympify("1/(1+25*x**2)") # Intégrale vaut 0.54936
-f2 = sp.sympify("(x**2)**(1/2)") # Intégrale vaut 1
-f3 = sp.sympify(sp.exp(x)) #Intégrale vaut 2.3504
+f1 = sp.sympify("1/(1+25*x**2)")  # Intégrale vaut 0.54936
+f2 = sp.sympify("(x**2)**(1/2)")  # Intégrale vaut 1
+f3 = sp.sympify(sp.exp(x))  # Intégrale vaut 2.3504
 
 # Subterfuge pour intégrer les fi avec le poids de Tchebychev
 g1 = sp.sympify(sp.sqrt(1-x**2)*f1)
 g2 = sp.sympify(sp.sqrt(1-x**2)*f2)
 g3 = sp.sympify(sp.sqrt(1-x**2)*f3)
 
-def Lagrange(f,nodes):
+def Lagrange(f, nodes):
     l = sp.simplify(0)
     for k, knode in enumerate(nodes):
         p = 1
         for j, jnode in enumerate(nodes):
             if j != k:
-                p *= (x-jnode)/(knode-jnode)
-        p *= f.subs(x,knode)
-        l+= p
+                p *= (x - jnode) / (knode - jnode)
+        p *= f.subs(x, knode)
+        l += p
     return l
-    
 def Legendre(n):
     P = [1,x]
     for i in range(2,n+1):
         P.append(sp.simplify((P[i-1]*x*(2*(i-1)+1)-(i-1)*P[i-2])/(i)))
     return P
 
-
 def IntegrateLagrange(l):
-    res = sp.integrate(l,(x,-1,1))
+    res = sp.integrate(l, (x, -1, 1))
     return res.evalf()
 
-L = Legendre(n)
-A = [sp.Poly(L[i], x).all_coeffs() for i in range(n+1)]
-C = [[float(e) for e in coeffs] for coeffs in A]
-# Calcul des racines des polynômes de Legendre
-Roots = []
-try:
-    Roots = polyroots(C[-1])
-except:
-    Roots = np.roots(C[-1])
+# Méthode de Golub-Welsch pour calculer racines et poids
+from numpy.polynomial.legendre import leggauss
+
+def legendre_roots_weights(n):
+    roots, weights = leggauss(n)  # Calcul direct via numpy
+    return roots, weights
+
+# Intégration via quadrature
+def gauss_quad(f, roots, weights):
+    return sum(w * f.subs(x, r) for r, w in zip(roots, weights))
+
 true_values = {
-
     '1': 2/5 * (np.arctan(5)),
-
     '2': 1.0,
-
     '3': np.exp(1)-np.exp(-1)
-
 }
 
+# Comparaison entre Legendre et Chebychev
 results_legendre = {}
+results_Chebychev = {}
 
 for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
-    l = Lagrange(fonct, Roots)
-    legendre_estimation = IntegrateLagrange(l)
+    # Legendre
+    roots, weights = legendre_roots_weights(n + 1)
+    estimation_legendre = gauss_quad(fonct, roots, weights)
     true_value = true_values[name]
+    
     results_legendre[name] = {
         'Vraie valeur': true_value,
-        'Estimation par Legendre': legendre_estimation,
-        'Erreur par Legendre' : np.abs(true_value-legendre_estimation)
+        'Estimation par Legendre': estimation_legendre,
+        'Erreur par Legendre': np.abs(true_value - estimation_legendre)
     }
-    results_legendre["Nombre de noeuds"] = n+1
-
-results = {}
-
 for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
-    Chebyshev_approx = np.sum([( np.pi/(n+1) )*fonct.subs(x, np.cos(((2*k+1)*np.pi)/(2*n+2)) ) for k in range(0,n+1)]) # Racines pour k = 0,..n, => n+1 racines, formule exercice 5.6.3 du syllabus.
+    # Chebychev
+    estimation_Chebychev = np.sum([( np.pi/(n+1) )*fonct.subs(x, np.cos(((2*k+1)*np.pi)/(2*n+2)) ) for k in range(0,n+1)]) # Racines pour k = 0,..n, => n+1 racines, formule exercice 5.6.3 du syllabus.
     true_value = true_values[name]
-    results[name] = {
+    
+    results_Chebychev[name] = {
         'Vraie valeur': true_value,
-        'Estimation par Chebychev': Chebyshev_approx,
-        'Erreur par Chebychev' : np.abs(true_value-Chebyshev_approx)
+        'Estimation par Chebychev': estimation_Chebychev,
+        'Erreur par Chebychev': np.abs(true_value - estimation_Chebychev)
     }
-    results["Nombre de noeuds"] = n+1
 
-
-for k in range(1,4):
-    print(results_legendre[str(k)])
-    print(results[str(k)])
 def plot():
     import matplotlib.pyplot as plt
     # Plot pour la décroissance des erreurs en fonction de n
     n_values = range(1, 24+1) # 1,...,24 -> nombre de noeuds : 2,...,25
     errors_legendre = {'1': [], '2': [], '3': []}
     errors_chebyshev = {'1': [], '2': [], '3': []}
+    legendre_poly = Legendre(n_values[-1])
 
-    for n in n_values:
+    for i,n in enumerate(n_values):
         # Recalcul des erreurs pour chaque n
-        L = Legendre(n)
-        A = [sp.Poly(L[i], x).all_coeffs() for i in range(n)]
-        C = [[float(e) for e in coeffs] for coeffs in A]
+        L = legendre_poly[i]
+        A = sp.Poly(L, x).all_coeffs()
+        C = [float(e) for e in A]
         try:
-            Roots = polyroots(C[-1])
+            Roots = polyroots(C)
         except:
-            Roots = np.roots(C[-1])
+            Roots = np.roots(C)
 
         for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
             l = Lagrange(fonct, Roots)
@@ -113,74 +107,62 @@ def plot():
             Chebyshev_approx = np.sum([(np.pi / (n)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n))) for k in range(n)])
             true_value = true_values[name]
             errors_chebyshev[name].append(np.abs(true_value - Chebyshev_approx))
-
+    number_nodes = n_values+np.ones(len(n_values)) 
     for name in ['1', '2', '3']:
         plt.figure()
-        plt.plot(n_values, errors_legendre[name], label='Erreur Legendre', marker='o')
-        plt.plot(n_values, errors_chebyshev[name], label='Erreur Tchebychev', marker='x')
-        plt.xlabel('Valeur de n (n+1 noeuds)')
+        plt.plot(number_nodes, errors_legendre[name], label='Erreur Legendre', marker='o')
+        plt.plot(number_nodes, errors_chebyshev[name], label='Erreur Tchebychev', marker='x')
+        plt.xlabel('Nombre de noeuds (n+1)')
         plt.ylabel('Erreur')
         plt.title(f'Erreur de quadrature pour la fonction {name}')
-        plt.xticks(n_values)
+        plt.xticks(number_nodes)
         plt.yscale('log')
         plt.legend()
         plt.grid(True)
         plt.show()
-def dichotomie():
-    tolerance_levels = [1e-2, 1e-4, 1e-6]
-    n_min = 1
-    n_max = 100  # On fixe une borne supérieure pour la recherche
 
-    results_thresholds = {
-        'Legendre': {'1': {}, '2': {}, '3': {}},
-        'Chebyshev': {'1': {}, '2': {}, '3': {}}
-    }
 
-    def find_min_n(fonct, method, threshold, n_min=1, n_max=100):
+def noeuds_min():
+    def find_min_n_optimized(fonct, method, threshold, n_min=1, n_max=1500):
         while n_min < n_max:
             n_mid = (n_min + n_max) // 2
-
+            
             if method == 'Legendre':
-                L = Legendre(n_mid)
-                A = [sp.Poly(L[i], x).all_coeffs() for i in range(n_mid)]
-                C = [[float(e) for e in coeffs] for coeffs in A]
-                try:
-                    Roots = polyroots(C[-1])
-                except:
-                    Roots = np.roots(C[-1])
-                l = Lagrange(fonct, Roots)
-                estimation = IntegrateLagrange(l)
+                roots, weights = legendre_roots_weights(n_mid)
+                estimation = gauss_quad(fonct, roots, weights)
             else:
                 estimation = np.sum([
-                    (np.pi / (n_mid)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n_mid)))
-                    for k in range(n_mid)
-                ])
-
+                        (np.pi / (n_mid)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n_mid)))
+                        for k in range(n_mid)
+                    ])
             true_value = true_values[name]
-            error = np.abs(true_value - estimation)
-
+            error = abs(true_value - estimation)
+            
             if error <= threshold:
                 n_max = n_mid
             else:
                 n_min = n_mid + 1
-
+        
         return n_min
 
+    tolerance_levels = [1e-2, 1e-4, 1e-6]
+    results_thresholds = {'Legendre': {}, 'Chebychev': {}}
+    method = 'Legendre'
     for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
         for tol in tolerance_levels:
-            n_legendre = find_min_n(fonct, 'Legendre', tol)
-            results_thresholds['Legendre'][name][tol] = n_legendre
-
+            min_n = find_min_n_optimized(fonct, method, tol)
+            results_thresholds[method].setdefault(name, {})[tol] = min_n
+    method = "Chebychev"
     for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
         for tol in tolerance_levels:
-            n_chebyshev = find_min_n(fonct, 'Chebyshev', tol)
-            results_thresholds['Chebyshev'][name][tol] = n_chebyshev
+            min_n = find_min_n_optimized(fonct, method, tol)
+            results_thresholds[method].setdefault(name, {})[tol] = min_n
 
     # Affichage des résultats
-    for method in ['Legendre', 'Chebyshev']:
+    for method in ['Legendre', 'Chebychev']:
         for func in ['1', '2', '3']:
             print(f"Méthode: {method}, Fonction: {func}")
             for tol in tolerance_levels:
-                print(f" - Tolérance {tol}: n = {results_thresholds[method][func][tol]}")
-dichotomie()
-
+                print(f" - Tolérance {tol}: # noeuds (n+1) = {results_thresholds[method][func][tol]}")
+plot()
+noeuds_min()
