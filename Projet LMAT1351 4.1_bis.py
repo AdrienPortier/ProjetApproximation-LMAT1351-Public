@@ -8,7 +8,7 @@ n = 11  # noeuds x0, ... , xn => n+1 noeuds
 
 # Fonctions à intégrer
 f1 = sp.sympify("1/(1+25*x**2)")  # Intégrale vaut 0.54936
-f2 = sp.sympify("(x**2)**(1/2)")  # Intégrale vaut 1
+f2 = sp.sympify(sp.Abs(x))  # Intégrale vaut 1
 f3 = sp.sympify(sp.exp(x))  # Intégrale vaut 2.3504
 
 # Subterfuge pour intégrer les fi avec le poids de Tchebychev
