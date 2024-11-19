@@ -86,3 +86,101 @@ for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
 for k in range(1,4):
     print(results_legendre[str(k)])
     print(results[str(k)])
+def plot():
+    import matplotlib.pyplot as plt
+    # Plot pour la décroissance des erreurs en fonction de n
+    n_values = range(1, 24+1) # 1,...,24 -> nombre de noeuds : 2,...,25
+    errors_legendre = {'1': [], '2': [], '3': []}
+    errors_chebyshev = {'1': [], '2': [], '3': []}
+
+    for n in n_values:
+        # Recalcul des erreurs pour chaque n
+        L = Legendre(n)
+        A = [sp.Poly(L[i], x).all_coeffs() for i in range(n)]
+        C = [[float(e) for e in coeffs] for coeffs in A]
+        try:
+            Roots = polyroots(C[-1])
+        except:
+            Roots = np.roots(C[-1])
+
+        for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
+            l = Lagrange(fonct, Roots)
+            legendre_estimation = IntegrateLagrange(l)
+            true_value = true_values[name]
+            errors_legendre[name].append(np.abs(true_value - legendre_estimation))
+
+        for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
+            Chebyshev_approx = np.sum([(np.pi / (n)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n))) for k in range(n)])
+            true_value = true_values[name]
+            errors_chebyshev[name].append(np.abs(true_value - Chebyshev_approx))
+
+    for name in ['1', '2', '3']:
+        plt.figure()
+        plt.plot(n_values, errors_legendre[name], label='Erreur Legendre', marker='o')
+        plt.plot(n_values, errors_chebyshev[name], label='Erreur Tchebychev', marker='x')
+        plt.xlabel('Valeur de n (n+1 noeuds)')
+        plt.ylabel('Erreur')
+        plt.title(f'Erreur de quadrature pour la fonction {name}')
+        plt.xticks(n_values)
+        plt.yscale('log')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+def dichotomie():
+    tolerance_levels = [1e-2, 1e-4, 1e-6]
+    n_min = 1
+    n_max = 100  # On fixe une borne supérieure pour la recherche
+
+    results_thresholds = {
+        'Legendre': {'1': {}, '2': {}, '3': {}},
+        'Chebyshev': {'1': {}, '2': {}, '3': {}}
+    }
+
+    def find_min_n(fonct, method, threshold, n_min=1, n_max=100):
+        while n_min < n_max:
+            n_mid = (n_min + n_max) // 2
+
+            if method == 'Legendre':
+                L = Legendre(n_mid)
+                A = [sp.Poly(L[i], x).all_coeffs() for i in range(n_mid)]
+                C = [[float(e) for e in coeffs] for coeffs in A]
+                try:
+                    Roots = polyroots(C[-1])
+                except:
+                    Roots = np.roots(C[-1])
+                l = Lagrange(fonct, Roots)
+                estimation = IntegrateLagrange(l)
+            else:
+                estimation = np.sum([
+                    (np.pi / (n_mid)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n_mid)))
+                    for k in range(n_mid)
+                ])
+
+            true_value = true_values[name]
+            error = np.abs(true_value - estimation)
+
+            if error <= threshold:
+                n_max = n_mid
+            else:
+                n_min = n_mid + 1
+
+        return n_min
+
+    for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
+        for tol in tolerance_levels:
+            n_legendre = find_min_n(fonct, 'Legendre', tol)
+            results_thresholds['Legendre'][name][tol] = n_legendre
+
+    for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
+        for tol in tolerance_levels:
+            n_chebyshev = find_min_n(fonct, 'Chebyshev', tol)
+            results_thresholds['Chebyshev'][name][tol] = n_chebyshev
+
+    # Affichage des résultats
+    for method in ['Legendre', 'Chebyshev']:
+        for func in ['1', '2', '3']:
+            print(f"Méthode: {method}, Fonction: {func}")
+            for tol in tolerance_levels:
+                print(f" - Tolérance {tol}: n = {results_thresholds[method][func][tol]}")
+dichotomie()
+
