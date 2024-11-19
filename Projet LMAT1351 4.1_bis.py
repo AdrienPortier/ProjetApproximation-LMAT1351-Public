@@ -163,6 +163,6 @@ def noeuds_min():
         for func in ['1', '2', '3']:
             print(f"Méthode: {method}, Fonction: {func}")
             for tol in tolerance_levels:
-                print(f" - Tolérance {tol}: # noeuds (n+1) = {results_thresholds[method][func][tol]}")
+                print(f" - Seuil d'erreur {tol}: # noeuds (n+1) = {results_thresholds[method][func][tol]}")
 plot()
 noeuds_min()
