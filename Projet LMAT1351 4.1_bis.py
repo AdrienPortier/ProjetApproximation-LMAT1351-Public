@@ -4,7 +4,7 @@ from mpmath import polyroots
 x = sp.Symbol('x')
 
 # Paramètres
-n = 11  # noeuds x0, ... , xn => n+1 noeuds
+n = 0  # noeuds x0, ... , xn => n+1 noeuds
 
 # Fonctions à intégrer
 f1 = sp.sympify("1/(1+25*x**2)")  # Intégrale vaut 0.54936
@@ -16,6 +16,7 @@ g1 = sp.sympify(sp.sqrt(1-x**2)*f1)
 g2 = sp.sympify(sp.sqrt(1-x**2)*f2)
 g3 = sp.sympify(sp.sqrt(1-x**2)*f3)
 
+#Exemple : n = 0, Legendre estim = 2, Cheby estim = pi
 def Lagrange(f, nodes):
     l = sp.simplify(0)
     for k, knode in enumerate(nodes):
@@ -59,7 +60,7 @@ results_Chebychev = {}
 
 for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
     # Legendre
-    roots, weights = legendre_roots_weights(n + 1)
+    roots, weights = legendre_roots_weights(n+1)
     estimation_legendre = gauss_quad(fonct, roots, weights)
     true_value = true_values[name]
     
@@ -82,14 +83,14 @@ for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
 def plot():
     import matplotlib.pyplot as plt
     # Plot pour la décroissance des erreurs en fonction de n
-    n_values = range(1, 24+1) # 1,...,24 -> nombre de noeuds : 2,...,25
+    n_values = range(0, 24+1) # 0,...,24 -> nombre de noeuds : 1,...,25
     errors_legendre = {'1': [], '2': [], '3': []}
     errors_chebyshev = {'1': [], '2': [], '3': []}
-    legendre_poly = Legendre(n_values[-1])
+    legendre_poly = Legendre(n_values[-1]+1)
 
-    for i,n in enumerate(n_values):
+    for n in n_values:
         # Recalcul des erreurs pour chaque n
-        L = legendre_poly[i]
+        L = legendre_poly[n+1]
         A = sp.Poly(L, x).all_coeffs()
         C = [float(e) for e in A]
         try:
@@ -104,7 +105,7 @@ def plot():
             errors_legendre[name].append(np.abs(true_value - legendre_estimation))
 
         for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
-            Chebyshev_approx = np.sum([(np.pi / (n)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n))) for k in range(n)])
+            Chebyshev_approx = np.sum([(np.pi / (n+1)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n + 2))) for k in range(n+1)])
             true_value = true_values[name]
             errors_chebyshev[name].append(np.abs(true_value - Chebyshev_approx))
     number_nodes = n_values+np.ones(len(n_values)) 
@@ -132,8 +133,8 @@ def noeuds_min():
                 estimation = gauss_quad(fonct, roots, weights)
             else:
                 estimation = np.sum([
-                        (np.pi / (n_mid)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n_mid)))
-                        for k in range(n_mid)
+                        (np.pi / (n_mid+1)) * fonct.subs(x, np.cos(((2 * k + 1) * np.pi) / (2 * n_mid+2)))
+                        for k in range(n_mid+1)
                     ])
             true_value = true_values[name]
             error = abs(true_value - estimation)
@@ -165,4 +166,3 @@ def noeuds_min():
             for tol in tolerance_levels:
                 print(f" - Seuil d'erreur {tol}: # noeuds (n+1) = {results_thresholds[method][func][tol]}")
 plot()
-noeuds_min()
