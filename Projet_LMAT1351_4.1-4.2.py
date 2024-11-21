@@ -1,8 +1,9 @@
 import numpy as np
+import sympy as sp
 from mpmath import mp,exp,atan,pi,cos
 
-mp.dps = 50
-    
+mp.dps = 100
+x = sp.Symbol('x')
 # Paramètres
 n = 25  # noeuds x0, ... , xn => n+1 noeuds
 
@@ -15,6 +16,49 @@ f3 = lambda x: exp(x)            # Intégrale vaut 2.3504
 g1 = lambda x: np.sqrt(1 - x**2) * f1(x)
 g2 = lambda x: np.sqrt(1 - x**2) * f2(x)
 g3 = lambda x: np.sqrt(1 - x**2) * f3(x)
+
+def Lagrange(f, nodes):
+    """
+    Renvoie le polynôme d'interpolation de Lagrange de f aux noeuds
+
+    Paramètres
+    ----------
+    f : Fonction 
+        Fonction à interpoler
+    nodes : Liste
+        Liste de points à utiliser lors de l'interpolation
+
+    Retourne
+    -------
+    Fonction Sympy
+        Le polynôme d'interpolation de Lagrange de f aux noeuds nodes
+    """
+    l = sp.simplify(0)
+    for k, knode in enumerate(nodes):
+        p = 1
+        for j, jnode in enumerate(nodes):
+            if j != k:
+                p *= (x - jnode) / (knode - jnode)
+        p *= f(knode)
+        l += p
+    return l
+
+def IntegrateLagrange(l):
+    """
+    Renvoie la valeur de l'intégrale du polynôme d'interpolation de Lagrange sur [-1,1]
+
+    Paramètres
+    ----------
+    l : Fonction Sympy
+        Polynôme d'interpolation de Lagrange à intégrer
+
+    Retourne
+    -------
+    int
+        Intégration du polynôme de Lagrange sur [-1,1]
+    """
+    res = sp.integrate(l, (x, -1, 1))
+    return res.evalf()
 
 def Legendre(n):
     """
@@ -37,28 +81,21 @@ def Legendre(n):
     return P
 
 
-def obtenir_racines_poids_Legendre(poly):
+def obtenir_racines_Legendre(poly):
     """
-    Renvoie les racines du polynôme orthogonal de degré n et les poids pour la quadrature de Gauss via les polynômes de Legendre
+    Renvoie les racines du polynôme orthogonal de Legendre de degré n
 
     Paramètres
     ----------
     poly_orth : List(np.array)
-        Les polynômes orthogonaux de Legendre de degré n + 1
+        Le polynôme orthogonal de Legendre de degré n
 
     Retourne
     -------
-    List(float), List(float)
-        La liste contenant les racines du polynôme orthogonal de Legendre de degré n+1,
-        La liste contenant les A_k servant de poids pour la quadrature de Gauss via les polynômes de Legendre
+    List(float)
+        La liste contenant les racines du polynôme orthogonal de Legendre de degré n
     """
-    racines = np.roots(poly)  # n + 1 racines
-    poly = np.poly1d(np.polyder(poly))
-    Ak = []
-    for r in racines:
-        poids = 2/( (1 - np.power(r,2))*(np.power(poly(r),2)) )
-        Ak.append(poids)
-    return racines, Ak
+    return np.roots(poly)
 
 def gauss_quad(f, racines, poids):
     """
@@ -90,8 +127,9 @@ resultats_legendre = {}
 
 poly_Legendre = Legendre(n+1)
 for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
-    racines, poids = obtenir_racines_poids_Legendre(poly_Legendre[-1])
-    estimation_legendre = gauss_quad(fonct, racines, poids)
+    racines = obtenir_racines_Legendre(poly_Legendre[-1])
+    l = Lagrange(fonct, racines)
+    estimation_legendre = IntegrateLagrange(l)
     vraie_valeur = valeurs_réelles[name]
     
     resultats_legendre[name] = {
@@ -118,12 +156,12 @@ def plot():
     errors_legendre = {'1': [], '2': [], '3': []}
     errors_chebyshev = {'1': [], '2': [], '3': []}
     poly_Legendre = Legendre(n_values[-1]+1) # si valeur n, nous voulons n+1 racines
-
     for n in n_values:
-
+        
         for name, fonct in zip(['1', '2', '3'], [f1, f2, f3]):
-            racines, poids = obtenir_racines_poids_Legendre(poly_Legendre[n+1])
-            estimation_legendre = gauss_quad(fonct, racines, poids)
+            racines = obtenir_racines_Legendre(poly_Legendre[n+1])
+            l = Lagrange(fonct, racines)
+            estimation_legendre = IntegrateLagrange(l)
             vraie_valeur = valeurs_réelles[name]
             errors_legendre[name].append(np.abs(vraie_valeur - estimation_legendre))
         
