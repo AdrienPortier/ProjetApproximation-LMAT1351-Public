@@ -129,7 +129,7 @@ for name, fonct in zip(['1', '2', '3'], [g1, g2, g3]):
 def plot():
     import matplotlib.pyplot as plt
     # Plot pour la décroissance des erreurs en fonction de n
-    n_values = range(1, 25) # 1,...,24 -> nombre de noeuds : 2,...,25
+    n_values = range(0, 25) # 0,...,24 -> nombre de noeuds : 1,...,25
     errors_legendre = {'1': [], '2': [], '3': []}
     errors_chebyshev = {'1': [], '2': [], '3': []}
     poly_Legendre = Legendre(n_values[-1]+2) # si valeur n, nous voulons n+1 racines, mais besoin de poly de deg n+2 pour calcul formule Legendre
