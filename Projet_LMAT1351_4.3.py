@@ -18,17 +18,17 @@ g3 = sp.sympify(sp.sqrt(1-x**2)*f3)
 
 def Legendre(n):
     """
-    Renvoie la liste des polynômes de Legendre normalisés (divisés par leur norme) de degré 0 à n 
+    Renvoie la liste des polynômes orthogonaux de Legendre de degré 0 à n 
 
     Paramètres
     ----------
     n : int
-        Le degré du dernier polynôme de Legendre de la liste
+        Le degré du dernier polynôme orthogonal de Legendre de la liste
 
     Retourne
     -------
     List(np.array)
-        La liste contenant les polynômes de Legendre normalisés
+        La liste contenant les polynômes orthogonaux de Legendre
     """
     P = [1,x]
     for i in range(2,n+1):
